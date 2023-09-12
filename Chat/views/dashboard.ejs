@@ -59,7 +59,6 @@
 
 
     $(document).ready(function(){
-        console.log($.ajax);
         $('.user-list').click(function(){
             
             var userId = $(this).attr('data-id');
@@ -67,6 +66,8 @@
 
             $('.start-head').hide();
             $('.chat-section').show();
+
+            socket.emit('existsChat', { sender_id:sender_id, receiver_id:receiver_id });
         });
     })
 
@@ -98,23 +99,61 @@
                 receiver_id:receiver_id,
                 message:message
             },
-            success:function(data) {
-                if(data.success) {
-                    console.log(data);
+            success:function(response) {
+                if(response.success) {
+                    console.log(response.data.message);
                     $('#message').val();
-                    let chat = data.message;
+                    let chat = response.data.message;
                     let html = `
                     <div class="current-user-chat">
                         <h5>`+chat+`</h5>
                     </div>
                     `;
+                    $('#chat-container').append(html);
+                    socket.emit('newChat', response.data)
                 }
                 else {
-                    alert(data.message)
+                    alert(response.data.message)
                 }
             }
         })
     });
+
+    socket.on('loadNewChat', function(data){
+        if(sender_id == data.receiver_id && receiver_id == data.sender_id ){
+            let html = `
+            <div class="distance-user-chat">
+                <h5>`+data.message+`</h5>
+            </div>
+            `;
+            $('#chat-container').append(html);
+        }
+    })
+
+    //load old chat
+
+    socket.on('loadChats', function(data){
+        $('#chat-container').html('');
+
+        var chats = data.chats;
+        let html = '';
+        for(let x = 0; x < chats.length; x++) {
+            let addClass = '';
+            if(chats[x]['sender_id'] == sender_id) {
+                addClass = 'current-user-chat';
+            }
+            else{
+                addClass = 'distance-user-chat';
+            }
+            console.log(addClass);
+            html += `
+            <div class='`+addClass+`'>
+                <h5>`+chats[x]['message']+`</h5>
+            </div>
+            `;
+        }
+        $('#chat-container').append(html);
+    })
 
 </script>
 
